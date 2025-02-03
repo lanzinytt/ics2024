@@ -17,6 +17,7 @@
 #include <cpu/cpu.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "memory/paddr.h"
 #include "sdb.h"
 
 static int is_batch_mode = false;
@@ -52,6 +53,57 @@ static int cmd_q(char *args) {
   return -1;
 }
 
+static int cmd_si(char *args) {
+  if(args == NULL){
+      cpu_exec(1);
+  }else{
+      int num;
+      if(sscanf(args,"%d",&num) == 1) {
+          cpu_exec(num);
+      }else{
+        printf("get num ERROR\n");
+      }
+  }
+  
+  return 0;
+}
+
+static int cmd_info(char *args){
+  if(args==NULL){
+    printf("\"r\" -Print register status or \"w\" -Print watchpoint info.");
+  }else{
+    if(strcmp(args,"r")==0){
+      isa_reg_display();// isa_reg_display need
+    }else if(strcmp(args,"w")==0){
+      // info_watchpoint();// info_watchpoint need
+    }
+  }
+  return 0;
+}
+
+static int cmd_x(char *args){
+  if(args==NULL){
+    printf("get command ERROR\n");
+    return 0;
+  }
+  int num;
+  uint32_t startAddress;
+  sscanf(args,"%d%x",&num,&startAddress);
+  for(int i=0;i<num;i++){
+    printf("%x\n",paddr_read(startAddress,4));//paddr_read need
+    startAddress +=4;
+  }
+  return 0;
+}
+static int cmd_p(){
+  return 0;
+}
+static int cmd_w(){
+  return 0;
+}
+static int cmd_d(){
+  return 0;
+}
 static int cmd_help(char *args);
 
 static struct {
@@ -62,7 +114,12 @@ static struct {
   { "help", "Display information about all supported commands", cmd_help },
   { "c", "Continue the execution of the program", cmd_c },
   { "q", "Exit NEMU", cmd_q },
-
+  { "si", "execute N instructions step-by-step and then pause. If N is not specified, the default value is 1", cmd_si },
+  { "info","Display register status,Show watchpoint information",cmd_info},
+  { "x","Evaluate the expression EXPR, use the result as the starting memory address, and output N consecutive 4-byte values in hexadecimal format",cmd_x},
+  { "p","Evaluate the expression EXPR",cmd_p},
+  { "w","Suspend program execution when the value of expression EXPR changes",cmd_w},
+  { "d","Delete the watchpoint with index N.",cmd_d},
   /* TODO: Add more commands */
 
 };

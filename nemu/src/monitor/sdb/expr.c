@@ -21,8 +21,12 @@
 #include <regex.h>
 
 enum {
-  TK_NOTYPE = 256, TK_EQ,
-
+  TK_NOTYPE = 256,
+  TK_EQ = 1,
+  NT_EQ = 0,
+  REG = 32,
+  HEX = 16,
+  NUM = 10
   /* TODO: Add more token types */
 
 };
@@ -38,7 +42,19 @@ static struct rule {
 
   {" +", TK_NOTYPE},    // spaces
   {"\\+", '+'},         // plus
+  {"\\-", '-'},         // sub
+  {"\\*", '*'},         // mul
+  {"\\/", '/'},         // div
+
+  {"\\(", '('},
+  {"\\)", ')'},
+
+  {"\\!\\=", NT_EQ},
   {"==", TK_EQ},        // equal
+  
+  {"\\$[a-zA-Z]*[0-9]*",REG},
+  {"0[xX][0-9a-fA-F]+",HEX},
+  {"[0-9]*",NUM},
 };
 
 #define NR_REGEX ARRLEN(rules)
@@ -81,21 +97,52 @@ static bool make_token(char *e) {
     /* Try all rules one by one. */
     for (i = 0; i < NR_REGEX; i ++) {
       if (regexec(&re[i], e + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
-        char *substr_start = e + position;
+        // char *substr_start = e + position;
+        
         int substr_len = pmatch.rm_eo;
 
-        Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
-            i, rules[i].regex, position, substr_len, substr_len, substr_start);
-
+        // Log("match rules[%d] = \"%s\" at position %d with len %d: %.*s",
+        //     i, rules[i].regex, position, substr_len, substr_len, substr_start);
+        
         position += substr_len;
 
         /* TODO: Now a new token is recognized with rules[i]. Add codes
          * to record the token in the array `tokens'. For certain types
          * of tokens, some extra actions should be performed.
          */
-
+        Token tmp_token;
         switch (rules[i].token_type) {
-          default: TODO();
+          case '+':
+            tmp_token.type='+';
+            tokens[nr_token ++]=tmp_token;
+          case '-':
+            tmp_token.type='+';
+            tokens[nr_token ++]=tmp_token;
+          case '*':
+            tmp_token.type='+';
+            tokens[nr_token ++]=tmp_token;
+          case '/':
+            tmp_token.type='+';
+            tokens[nr_token ++]=tmp_token;
+          
+          
+          case 10:
+            tokens[nr_token].type=10;
+            strncpy(tokens[nr_token].str,&e[position-substr_len],substr_len);
+            nr_token ++;
+          case 16:
+            tokens[nr_token].type=16;
+            strncpy(tokens[nr_token].str,&e[position-substr_len],substr_len);
+            nr_token ++;
+          case 32:
+            tokens[nr_token].type=32;
+            strncpy(tokens[nr_token].str,&e[position-substr_len],substr_len);
+            nr_token ++;
+          case 256:
+          case 1:
+          case 2:
+          default:
+            break;
         }
 
         break;
@@ -110,7 +157,7 @@ static bool make_token(char *e) {
 
   return true;
 }
-
+ 
 
 word_t expr(char *e, bool *success) {
   if (!make_token(e)) {
